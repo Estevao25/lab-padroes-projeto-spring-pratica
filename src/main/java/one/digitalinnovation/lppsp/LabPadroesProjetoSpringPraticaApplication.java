@@ -1,4 +1,4 @@
-package one.digitalinnovation.labpadroesprojetospringpratica;
+package one.digitalinnovation.lppsp;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

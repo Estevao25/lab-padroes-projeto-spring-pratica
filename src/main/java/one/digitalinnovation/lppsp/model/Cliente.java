@@ -1,4 +1,4 @@
-package one.digitalinnovation.labpadroesprojetospringpratica.model;
+package one.digitalinnovation.lppsp.model;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
