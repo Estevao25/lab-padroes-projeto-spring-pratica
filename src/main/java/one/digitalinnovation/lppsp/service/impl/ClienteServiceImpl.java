@@ -1,16 +1,16 @@
 package one.digitalinnovation.lppsp.service.impl;
 
-import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import one.digitalinnovation.lppsp.exceptions.ResourceNotFoundException;
 import one.digitalinnovation.lppsp.feignclient.ViaCepFeign;
 import one.digitalinnovation.lppsp.model.Cliente;
 import one.digitalinnovation.lppsp.model.Endereco;
 import one.digitalinnovation.lppsp.repository.ClienteRepository;
 import one.digitalinnovation.lppsp.repository.EnderecoRepository;
 import one.digitalinnovation.lppsp.service.ClienteService;
+import one.digitalinnovation.lppsp.util.Constants;
 
 @Service
 public class ClienteServiceImpl implements ClienteService{
@@ -31,29 +31,39 @@ public class ClienteServiceImpl implements ClienteService{
 
 	@Override
 	public Cliente buscarPorId(Long id) {
-		Optional<Cliente> cliente = clienteRepository.findById(id);
-		return cliente.get();
+		return clienteRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(Constants.CLIENT_NOT_FOUND + id));
 	}
 
 	@Override
 	public void inserir(Cliente cliente) {
-		salvarCliente(cliente);
+		if(cliente.getEndereco() != null) {
+			salvarClienteComCep(cliente);			
+		} else {
+			salvarCliente(cliente);
+		}
 	}
 
 	@Override
 	public void atualizar(Long id, Cliente newCliente) {
-		Optional<Cliente> cliente = clienteRepository.findById(id);
-		if(cliente.isPresent()) {
+		Cliente cliente = buscarPorId(id);
+		newCliente.setId(cliente.getId());
+		if(newCliente.getNome() == null) {newCliente.setNome(cliente.getNome());}
+		if(newCliente.getEndereco() != null) {
+			salvarClienteComCep(newCliente);			
+		} else {
+			if(cliente.getEndereco() != null) {
+				newCliente.setEndereco(cliente.getEndereco());
+			}
 			salvarCliente(newCliente);
 		}
 	}
 
 	@Override
 	public void deletar(Long id) {
-		clienteRepository.deleteById(id);
+		clienteRepository.delete(buscarPorId(id));
 	}
 	
-	private void salvarCliente(Cliente cliente) {
+	private void salvarClienteComCep(Cliente cliente) {
 		String cep = cliente.getEndereco().getCep();
 		Endereco endereco = enderecoRepository.findById(cep).orElseGet(() -> {
 			Endereco newEndereco = viaCepFeign.consultarCep(cep);
@@ -61,6 +71,10 @@ public class ClienteServiceImpl implements ClienteService{
 			return newEndereco;
 		});
 		cliente.setEndereco(endereco);
+		clienteRepository.save(cliente);
+	}
+	
+	private void salvarCliente(Cliente cliente) {
 		clienteRepository.save(cliente);
 	}
 }
